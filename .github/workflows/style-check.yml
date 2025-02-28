@@ -30,10 +30,14 @@ jobs:
         run: python src/style_checker.py path/to/project --output report.json
 
       - name: Upload Style Check Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
+
         with:
           name: code-style-report
           path: report.json
 
       - name: Run Unit Tests
         run: python -m unittest discover tests/
+
+    
+
