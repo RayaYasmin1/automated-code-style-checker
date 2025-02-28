@@ -10,7 +10,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v3
         with:
           python-version: '3.x'
 
@@ -19,7 +19,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run flake8
+      - name: List files in the directory (debugging)
+        run: ls -la
+
+      - name: Run flake8 (debugging without output file)
+        run: |
+          flake8 --version  # Verify flake8 is installed and working
+          flake8 .  # Run flake8 without output file
+
+      - name: Run flake8 with JSON output
         run: |
           flake8 --output-file=report.json --format=json .
 
@@ -28,4 +36,5 @@ jobs:
         with:
           name: flake8-report
           path: report.json
+
 
