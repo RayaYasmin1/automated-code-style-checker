@@ -24,7 +24,7 @@ jobs:
           flake8 --output-file=report.json --format=json .
 
       - name: Upload flake8 report as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: flake8-report
           path: report.json
