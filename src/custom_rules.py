@@ -2,6 +2,8 @@ import ast
 import re
 
 # Rule 1: Variable Naming (snake_case)
+
+
 def check_variable_naming(file_path):
     violations = []
     with open(file_path, 'r') as file:
@@ -264,5 +266,3 @@ def check_end_blank_line(file_path):
             })
 
     return violations
-
-
