@@ -1,19 +1,21 @@
 import unittest
-from src.style_checker import run_custom_tool, run_flake8
+from src.custom_rules import check_variable_naming, check_unused_imports, check_unused_variables
 
-
-class TestCodeStyleChecker(unittest.TestCase):
-
-    def test_run_custom_tool(self):
-        file_path = "examples/example_bad_variable_name.py"
-        violations = run_custom_tool(file_path)
-        # Adjusted expected result based on the example file content
-        # Example file contains two violations
-        self.assertEqual(len(violations), 2)
-
-    def test_run_flake8(self):
-        file_path = "examples/example_bad_variable_name.py"
-        violations = run_flake8(file_path)
-        # Adjusted expected result based on the example file content
-        # Flake8 should return some violations
+class TestCustomRules(unittest.TestCase):
+    def test_check_variable_naming(self):
+        file_path = "test_file.py"
+        violations = check_variable_naming(file_path)
         self.assertGreater(len(violations), 0)
+
+    def test_check_unused_imports(self):
+        file_path = "test_file.py"
+        violations = check_unused_imports(file_path)
+        self.assertGreater(len(violations), 0)
+
+    def test_check_unused_variables(self):
+        file_path = "test_file.py"
+        violations = check_unused_variables(file_path)
+        self.assertGreater(len(violations), 0)
+
+if __name__ == "__main__":
+    unittest.main()

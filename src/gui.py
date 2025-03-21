@@ -1,12 +1,14 @@
 import os
-import sys
-import time
+import tkinter as tk
+from tkinter import filedialog, messagebox, scrolledtext
 import subprocess
 import psutil
+import time
 import re
 import ast
-import difflib
+import difflib  # For generating diffs
 
+# Import custom rules
 from custom_rules import (
     check_variable_naming,
     check_function_naming,
@@ -47,9 +49,9 @@ def run_custom_tool(file_path):
         violations.extend(check_unused_imports(file_path))
         violations.extend(check_unused_variables(file_path))
     except SyntaxError as e:
-        print(f"Syntax error in file '{file_path}': {e}")
+        messagebox.showerror("Syntax Error", f"Invalid Python syntax in file: {e}")
     except Exception as e:
-        print(f"An error occurred while running the custom tool: {e}")
+        messagebox.showerror("Error", f"An error occurred while running the custom tool: {e}")
     return violations
 
 def run_flake8(file_path):
@@ -76,7 +78,7 @@ def run_flake8(file_path):
                 print(f"Skipping invalid line: {line}")  # Debug if something unexpected appears
         print(f"Violations List: {violations}")  # Debug statement
     except Exception as e:
-        print(f"An error occurred while running flake8: {e}")
+        messagebox.showerror("Error", f"An error occurred while running flake8: {e}")
     return violations
 
 def run_autopep8(file_path):
@@ -91,7 +93,7 @@ def run_autopep8(file_path):
             subprocess.run(['autopep8', '--in-place', file_path], capture_output=True, text=True)
         return diff_result.stdout
     except Exception as e:
-        print(f"An error occurred while running autopep8: {e}")
+        messagebox.showerror("Error", f"An error occurred while running autopep8: {e}")
         return ""
 
 def fix_custom_violations(file_path):
@@ -209,126 +211,125 @@ def fix_custom_violations(file_path):
         print("Generated diff output:", diff_output)  # Debug statement
         return diff_output
     except SyntaxError as e:
-        print(f"Syntax error in file '{file_path}': {e}")
+        messagebox.showerror("Syntax Error", f"Invalid Python syntax in file: {e}")
         return ""
     except Exception as e:
-        print(f"An error occurred while fixing custom violations: {e}")
+        messagebox.showerror("Error", f"An error occurred while fixing custom violations: {e}")
         return ""
 
-def benchmark_tool(custom_tool_function, flake8_function, autopep8_function, file_path):
-    """Benchmark the custom tool, Flake8, and autopep8."""
-    process = psutil.Process()
+class CodeStyleCheckerApp:
+    """GUI application for checking and fixing code style violations."""
 
-    # Run custom tool
-    start_time = time.time()
-    start_memory = process.memory_info().rss
-    custom_violations = custom_tool_function(file_path)
-    custom_time = time.time() - start_time
-    custom_memory = process.memory_info().rss - start_memory
+    def __init__(self, root):
+        """Initialize the GUI application."""
+        self.root = root
+        self.root.title("Automated Code Style Checker")
+        self.root.geometry("1000x800")  # Increase the size of the main window
 
-    # Run flake8
-    start_time = time.time()
-    start_memory = process.memory_info().rss
-    flake8_violations = flake8_function(file_path)
-    flake8_time = time.time() - start_time
-    flake8_memory = process.memory_info().rss - start_memory
+        # File Selection
+        self.file_path = None
+        self.file_label = tk.Label(root, text="Selected File: None", font=("Arial", 12))
+        self.file_label.pack(pady=10)
 
-    # Run autopep8
-    start_time = time.time()
-    start_memory = process.memory_info().rss
-    autopep8_output = autopep8_function(file_path)
-    autopep8_time = time.time() - start_time
-    autopep8_memory = process.memory_info().rss - start_memory
+        self.select_file_button = tk.Button(root, text="Select Python File", command=self.select_file)
+        self.select_file_button.pack(pady=10)
 
-    return custom_violations, flake8_violations, autopep8_output, custom_time, flake8_time, autopep8_time, custom_memory, flake8_memory, autopep8_memory
+        # Run Checks
+        self.run_checks_button = tk.Button(root, text="Run Checks", command=self.run_checks, state=tk.DISABLED)
+        self.run_checks_button.pack(pady=10)
 
-def display_violations(violations, tool_name):
-    """Display violations found by a tool."""
-    if violations:
-        print(f"\n{tool_name} Violations ({len(violations)} found):")
-        for v in violations:
-            print(f"Line {v['line_number']}, Column {v['column_number']}: {v['message']}")
-    else:
-        print(f"\n{tool_name}: No violations found. Your code is clean!")
+        # Display Results
+        self.results_text = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=100, height=30)
+        self.results_text.pack(pady=10)
 
-def main():
-    """Main function to run the code style checker."""
-    print("Welcome to the Automated Code Style Checker!")
-    print("This tool checks your Python file for PEP 8 violations and provides feedback.\n")
+        # Fix Violations
+        self.fix_violations_button = tk.Button(root, text="Fix Violations", command=self.fix_violations, state=tk.DISABLED)
+        self.fix_violations_button.pack(pady=10)
 
-    while True:
-        # Ask the user for the file path
-        file_path = input("Enter the path to your Python file (or type 'exit' to quit): ").strip()
+        # Exit
+        self.exit_button = tk.Button(root, text="Exit", command=root.quit)
+        self.exit_button.pack(pady=10)
 
-        # Allow the user to exit
-        if file_path.lower() == 'exit':
-            print("Exiting the program. Goodbye!")
-            break
+    def select_file(self):
+        """Select a Python file for analysis."""
+        self.file_path = filedialog.askopenfilename(filetypes=[("Python Files", "*.py")])
+        if self.file_path:
+            self.file_label.config(text=f"Selected File: {self.file_path}")
+            self.run_checks_button.config(state=tk.NORMAL)
+            self.fix_violations_button.config(state=tk.NORMAL)
 
-        # Normalize the file path
-        file_path = os.path.normpath(file_path)
+    def run_checks(self):
+        """Run custom tool and Flake8 checks on the selected file."""
+        if not self.file_path:
+            messagebox.showerror("Error", "No file selected!")
+            return
 
-        # Check if the file exists and is a Python file
-        if not os.path.isfile(file_path):
-            print(f"Error: File '{file_path}' not found. Please try again.\n")
-            continue
-        if not file_path.endswith('.py'):
-            print(f"Error: '{file_path}' is not a Python file. Please provide a .py file.\n")
-            continue
+        self.results_text.delete(1.0, tk.END)  # Clear previous results
 
-        try:
-            # Run the custom tool and display results
-            print("\nRunning custom code style checker...")
-            custom_violations = run_custom_tool(file_path)
-            display_violations(custom_violations, "Custom Tool")
+        # Initialize process for memory tracking
+        process = psutil.Process()
 
-            # Run flake8 and display results
-            print("\nRunning flake8...")
-            flake8_violations = run_flake8(file_path)
-            display_violations(flake8_violations, "Flake8")
+        # Run custom tool
+        start_time = time.time()
+        start_memory = process.memory_info().rss  # Memory usage before running the tool
+        custom_violations = run_custom_tool(self.file_path)
+        custom_time = time.time() - start_time
+        custom_memory = process.memory_info().rss - start_memory  # Memory usage after running the tool
 
-            # Run autopep8 and display results
-            print("\nRunning autopep8 to fix violations...")
-            autopep8_output = run_autopep8(file_path)
-            if autopep8_output:
-                print("\nautopep8 output:")
-                print(autopep8_output)
-            else:
-                print("\nautopep8: No fixes were applied.")
+        # Display custom tool violations
+        self.results_text.insert(tk.END, f"Custom Tool Violations ({len(custom_violations)} found):\n")
+        for v in custom_violations:
+            self.results_text.insert(tk.END, f"Line {v['line_number']}, Column {v['column_number']}: {v['message']}\n")
 
-            # Fix custom violations
-            print("\nFixing custom violations...")
-            custom_diff = fix_custom_violations(file_path)
-            if custom_diff:
-                print("\nCustom Tool Fixes Applied:")
-                print(custom_diff)
-            else:
-                print("\nCustom Tool: No fixes were applied.")
+        # Run flake8
+        start_time = time.time()
+        start_memory = process.memory_info().rss  # Memory usage before running Flake8
+        flake8_violations = run_flake8(self.file_path)
+        flake8_time = time.time() - start_time
+        flake8_memory = process.memory_info().rss - start_memory  # Memory usage after running Flake8
 
-            # Benchmark the tools
-            print("\nBenchmarking tools...")
-            custom_violations, flake8_violations, autopep8_output, custom_time, flake8_time, autopep8_time, custom_memory, flake8_memory, autopep8_memory = benchmark_tool(
-                run_custom_tool, run_flake8, run_autopep8, file_path)
+        # Display flake8 violations
+        self.results_text.insert(tk.END, f"\nFlake8 Violations ({len(flake8_violations)} found):\n")
+        if flake8_violations:
+            for v in flake8_violations:
+                self.results_text.insert(tk.END, f"Line {v['line_number']}, Column {v['column_number']}: {v['message']}\n")
+        else:
+            self.results_text.insert(tk.END, "No Flake8 violations found.\n")
 
-            print(f"\nCustom Tool Execution Time: {custom_time:.6f} seconds")
-            print(f"Flake8 Execution Time: {flake8_time:.6f} seconds")
-            print(f"autopep8 Execution Time: {autopep8_time:.6f} seconds")
+        # Display benchmarking results
+        self.results_text.insert(tk.END, "\nBenchmarking Results:\n")
+        self.results_text.insert(tk.END, f"Custom Tool Execution Time: {custom_time:.6f} seconds\n")
+        self.results_text.insert(tk.END, f"Custom Tool Memory Usage: {custom_memory / 1024:.2f} KB\n")  # Memory usage in KB
+        self.results_text.insert(tk.END, f"Flake8 Execution Time: {flake8_time:.6f} seconds\n")
+        self.results_text.insert(tk.END, f"Flake8 Memory Usage: {flake8_memory / 1024:.2f} KB\n")  # Memory usage in KB
 
-            print(f"\nCustom Tool Memory Usage: {custom_memory / 1024:.2f} KB")
-            print(f"Flake8 Memory Usage: {flake8_memory / 1024:.2f} KB")
-            print(f"autopep8 Memory Usage: {autopep8_memory / 1024:.2f} KB")
+    def fix_violations(self):
+        """Fix violations in the selected file using custom tool and autopep8."""
+        if not self.file_path:
+            messagebox.showerror("Error", "No file selected!")
+            return
 
-        except SyntaxError as e:
-            print(f"\nSyntax error in file '{file_path}': {e}")
-        except Exception as e:
-            print(f"\nAn error occurred while processing the file '{file_path}': {e}")
-            print("Skipping this file and continuing to the next one.\n")
+        # Fix custom tool violations
+        print("Running custom tool fixes...")  # Debug statement
+        custom_diff = fix_custom_violations(self.file_path)
+        print("Custom tool diff output:", custom_diff)  # Debug statement
 
-        # Ask the user if they want to check another file
-        another_file = input("\nDo you want to check another file? (yes/no): ").strip().lower()
-        if another_file != 'yes':
-            print("Exiting the program. Goodbye!")
-            break
+        self.results_text.insert(tk.END, "\nCustom Tool Fixes Applied:\n")
+        self.results_text.insert(tk.END, custom_diff)
 
+        # Always run autopep8 to fix other PEP 8 violations
+        print("Running autopep8...")  # Debug statement
+        autopep8_output = run_autopep8(self.file_path)
+        print("autopep8 output:", autopep8_output)  # Debug statement
+
+        if autopep8_output:
+            self.results_text.insert(tk.END, "\nautopep8 Output (Fixes Applied):\n")
+            self.results_text.insert(tk.END, autopep8_output)
+        else:
+            self.results_text.insert(tk.END, "\nautopep8: No fixes were applied.\n")
+
+# Main Application
 if __name__ == "__main__":
-    main()
+    root = tk.Tk()
+    app = CodeStyleCheckerApp(root)
+    root.mainloop()

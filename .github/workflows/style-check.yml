@@ -1,40 +1,21 @@
-name: Code Style Check
-
-on: [push, pull_request]
-
+# .github/workflows/style-check.yml
+name: Code Style Checker
+on: [pull_request]
 jobs:
-  style-check:
+  code-style-check:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
+      - name: Checkout code
+        uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
-
-      - name: Install Dependencies
+          python-version: '3.9'
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: List files in the directory (debugging)
-        run: ls -la
-
-      - name: Run flake8 (debugging without output file)
+      - name: Run Code Style Checker
         run: |
-          flake8 --version  # Verify flake8 is installed and working
-          flake8 .  # Run flake8 without output file
-
-      - name: Run flake8 with JSON output
-        run: |
-          flake8 --output-file=report.json --format=json .
-
-      - name: Upload flake8 report as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: flake8-report
-          path: report.json
+          python src/style_checker.py
 
 
