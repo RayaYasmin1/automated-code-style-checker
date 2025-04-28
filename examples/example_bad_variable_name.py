@@ -1,2 +1,5 @@
-_bad_variable_name = 5
-_another_bad_variable = 10
+
+def my_function():
+    """This is a docstring."""
+    x = 5
+    return x
